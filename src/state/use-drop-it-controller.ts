@@ -109,6 +109,34 @@ export function useDropItController() {
     [persistStore, store]
   );
 
+
+  const dismissResurfacedItem = useCallback(
+    async (itemId: string) => {
+      if (!store) {
+        return;
+      }
+
+      const now = new Date().toISOString();
+      const nextStore: DropStoreModel = {
+        ...store,
+        items: store.items.map((item) =>
+          item.id === itemId
+            ? {
+                ...item,
+                status: 'held',
+                updatedAt: now,
+              }
+            : item
+        ),
+        updatedAt: now,
+      };
+
+      await persistStore(nextStore);
+      dispatch({ type: 'RESURFACE_DISMISSED', itemId });
+    },
+    [persistStore, store]
+  );
+
   const closeItem = useCallback(
     async (itemId: string) => {
       if (!store) {
@@ -172,6 +200,7 @@ export function useDropItController() {
     items,
     activeItem,
     transitionToResurfacing: requestResurface,
+    dismissResurfacedItem,
     closeItem,
     goToCapture,
     demoResurfaceHeldItem,
