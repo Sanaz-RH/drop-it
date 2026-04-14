@@ -12,7 +12,7 @@ const GONE_FADE_MS = 550;
 const HOLD_MS = 1700;
 const STRIP_COUNT = 9;
 
-export function ClosureState({ activeItem, completeClosure }: Props) {
+export function ClosureState({ activeItem, completeClosure, onClosureSound, onClosureComplete }: Props) {
   const cardProgress = useRef(new Animated.Value(0)).current;
   const shredderOpacity = useRef(new Animated.Value(1)).current;
   const goneOpacity = useRef(new Animated.Value(0)).current;
@@ -38,6 +38,9 @@ export function ClosureState({ activeItem, completeClosure }: Props) {
     }
 
     const timers: ReturnType<typeof setTimeout>[] = [];
+
+    onClosureSound();
+
     const run = Animated.sequence([
       Animated.timing(cardProgress, {
         toValue: 1,
@@ -64,6 +67,7 @@ export function ClosureState({ activeItem, completeClosure }: Props) {
 
     run.start(({ finished }) => {
       if (finished) {
+        onClosureComplete();
         completeClosure(activeItem.id);
       }
     });
@@ -72,7 +76,7 @@ export function ClosureState({ activeItem, completeClosure }: Props) {
       timers.forEach((timer) => clearTimeout(timer));
       run.stop();
     };
-  }, [activeItem, cardProgress, completeClosure, goneOpacity, shredderOpacity]);
+  }, [activeItem, cardProgress, completeClosure, goneOpacity, onClosureComplete, onClosureSound, shredderOpacity]);
 
   const cardTranslateY = cardProgress.interpolate({
     inputRange: [0, 1],

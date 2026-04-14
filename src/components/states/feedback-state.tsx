@@ -21,13 +21,17 @@ type Props = ReturnType<typeof useDropItController>;
 
 const RING_SIZE = 168;
 
-export function FeedbackState({ activeItem, items, goToCapture }: Props) {
+export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfirmation }: Props) {
   const ringProgress = useSharedValue(0);
   const checkProgress = useSharedValue(0);
 
   const heldItems = items.filter((item) => item.status === 'held');
 
   useEffect(() => {
+    if (activeItem?.id) {
+      onFeedbackConfirmation();
+    }
+
     ringProgress.value = 0;
     checkProgress.value = 0;
 
@@ -43,7 +47,7 @@ export function FeedbackState({ activeItem, items, goToCapture }: Props) {
         easing: Easing.inOut(Easing.cubic),
       })
     );
-  }, [activeItem?.id, checkProgress, ringProgress]);
+  }, [activeItem?.id, checkProgress, onFeedbackConfirmation, ringProgress]);
 
   const outerRingStyle = useAnimatedStyle(() => ({
     opacity: interpolate(ringProgress.value, [0, 0.62, 1], [1, 0.38, 0]),

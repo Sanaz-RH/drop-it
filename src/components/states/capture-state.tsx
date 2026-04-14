@@ -28,6 +28,7 @@ export function CaptureState({
   commitCaptureTransition,
   items,
   isReady,
+  onDropSuccess,
 }: Props) {
   const [inputFocused, setInputFocused] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,6 +88,7 @@ export function CaptureState({
   const completeSubmit = (itemId: string) => {
     setIsSubmitting(false);
     setCardText('');
+    onDropSuccess();
     commitCaptureTransition(itemId);
   };
 
@@ -102,6 +104,7 @@ export function CaptureState({
     }
 
     if (!slotCenterY || !inputCenterY) {
+      onDropSuccess();
       commitCaptureTransition(item.id);
       return;
     }
