@@ -165,6 +165,26 @@ export function useDropItController() {
     [persistStore, store]
   );
 
+  const completeClosure = useCallback(
+    async (itemId: string) => {
+      if (!store) {
+        dispatch({ type: 'RESET_RITUAL' });
+        return;
+      }
+
+      const now = new Date().toISOString();
+      const nextStore: DropStoreModel = {
+        ...store,
+        items: store.items.filter((item) => item.id !== itemId),
+        updatedAt: now,
+      };
+
+      await persistStore(nextStore);
+      dispatch({ type: 'RESET_RITUAL' });
+    },
+    [persistStore, store]
+  );
+
   const goToCapture = useCallback(() => {
     dispatch({ type: ui.phase === 'closure' ? 'RESET_RITUAL' : 'START_CAPTURE' });
   }, [ui.phase]);
@@ -202,6 +222,7 @@ export function useDropItController() {
     transitionToResurfacing: requestResurface,
     dismissResurfacedItem,
     closeItem,
+    completeClosure,
     goToCapture,
     demoResurfaceHeldItem,
     transitionModel: ritualTransitionMap,
