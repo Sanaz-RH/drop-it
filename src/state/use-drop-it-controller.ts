@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 
+import { useRitualFeedback } from '@/src/hooks/use-ritual-feedback';
 import { loadDropStore, saveDropStore } from '@/src/storage/drop-storage';
 import { DropItem, DropStoreModel } from '@/src/types/drop-item';
 import {
@@ -15,6 +16,7 @@ type ResurfaceReason = 'manual' | 'demo';
 
 export function useDropItController() {
   const [ui, dispatch] = useReducer(ritualReducer, undefined, createInitialUiState);
+  const ritualFeedback = useRitualFeedback();
   const [store, setStore] = useState<DropStoreModel | null>(null);
   const [draft, setDraft] = useState('');
 
@@ -108,7 +110,6 @@ export function useDropItController() {
     },
     [persistStore, store]
   );
-
 
   const dismissResurfacedItem = useCallback(
     async (itemId: string) => {
@@ -226,5 +227,9 @@ export function useDropItController() {
     goToCapture,
     demoResurfaceHeldItem,
     transitionModel: ritualTransitionMap,
+    onDropSuccess: ritualFeedback.onDropSuccess,
+    onFeedbackConfirmation: ritualFeedback.onFeedbackConfirmation,
+    onClosureSound: ritualFeedback.onClosureSound,
+    onClosureComplete: ritualFeedback.onClosureComplete,
   };
 }
