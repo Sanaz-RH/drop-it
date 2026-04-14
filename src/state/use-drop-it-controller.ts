@@ -44,11 +44,11 @@ export function useDropItController() {
     await saveDropStore(next);
   }, []);
 
-  const addItem = useCallback(async () => {
+  const prepareCaptureItem = useCallback(async () => {
     const text = draft.trim();
 
     if (!text || !store) {
-      return;
+      return null;
     }
 
     const now = new Date().toISOString();
@@ -69,8 +69,12 @@ export function useDropItController() {
 
     await persistStore(nextStore);
     setDraft('');
-    dispatch({ type: 'CAPTURE_SUBMITTED', itemId: item.id });
+    return item;
   }, [draft, persistStore, store]);
+
+  const commitCaptureTransition = useCallback((itemId: string) => {
+    dispatch({ type: 'CAPTURE_SUBMITTED', itemId });
+  }, []);
 
   const requestResurface = useCallback(
     async (itemId: string, reason: ResurfaceReason = 'manual') => {
@@ -163,7 +167,8 @@ export function useDropItController() {
     isReady: !!store,
     draft,
     setDraft,
-    addItem,
+    prepareCaptureItem,
+    commitCaptureTransition,
     items,
     activeItem,
     transitionToResurfacing: requestResurface,
