@@ -176,7 +176,8 @@ function ShredStrip({
         styles.strip,
         {
           transform: [
-            { translateX: horizontalOffset + progress.interpolate({ inputRange: [0, 1], outputRange: [0, sway] }) },
+            { translateX: horizontalOffset },
+            { translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [0, sway] }) },
             { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [0, fallDistance] }) },
           ],
           opacity: progress.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.9] }),
