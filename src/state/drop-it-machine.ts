@@ -4,6 +4,7 @@ export type RitualEvent =
   | { type: 'CAPTURE_SUBMITTED'; itemId: string }
   | { type: 'FEEDBACK_COMPLETE' }
   | { type: 'RESURFACE_REQUESTED'; itemId: string }
+  | { type: 'RESURFACE_DISMISSED'; itemId: string }
   | { type: 'ITEM_CLOSED'; itemId: string }
   | { type: 'START_CAPTURE' }
   | { type: 'RESET_RITUAL' };
@@ -17,7 +18,7 @@ export const ritualTransitionMap: Record<RitualPhase, RitualEvent['type'][]> = {
   capture: ['CAPTURE_SUBMITTED'],
   feedback: ['FEEDBACK_COMPLETE'],
   held: ['RESURFACE_REQUESTED', 'ITEM_CLOSED', 'START_CAPTURE'],
-  resurface: ['ITEM_CLOSED', 'START_CAPTURE'],
+  resurface: ['RESURFACE_DISMISSED', 'ITEM_CLOSED', 'START_CAPTURE'],
   closure: ['RESET_RITUAL'],
 };
 
@@ -53,6 +54,11 @@ export function ritualReducer(state: RitualUiState, event: RitualEvent): RitualU
     case 'RESURFACE_REQUESTED':
       return {
         phase: 'resurface',
+        activeItemId: event.itemId,
+      };
+    case 'RESURFACE_DISMISSED':
+      return {
+        phase: 'held',
         activeItemId: event.itemId,
       };
     case 'ITEM_CLOSED':
