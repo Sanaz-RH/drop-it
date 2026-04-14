@@ -9,7 +9,7 @@ import {
   RitualPhase,
 } from '@/src/state/drop-it-machine';
 
-const FEEDBACK_DELAY_MS = 1300;
+const FEEDBACK_DELAY_MS = 5200;
 
 type ResurfaceReason = 'manual' | 'demo';
 
