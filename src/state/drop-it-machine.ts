@@ -16,7 +16,7 @@ export type RitualUiState = {
 export const ritualTransitionMap: Record<RitualPhase, RitualEvent['type'][]> = {
   capture: ['CAPTURE_SUBMITTED'],
   feedback: ['FEEDBACK_COMPLETE'],
-  held: ['RESURFACE_REQUESTED', 'START_CAPTURE'],
+  held: ['RESURFACE_REQUESTED', 'ITEM_CLOSED', 'START_CAPTURE'],
   resurface: ['ITEM_CLOSED', 'START_CAPTURE'],
   closure: ['RESET_RITUAL'],
 };
