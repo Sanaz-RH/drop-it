@@ -6,6 +6,7 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withRepeat,
   withSequence,
   withTiming,
@@ -114,14 +115,13 @@ export function CaptureState({
 
     cardY.value = withTiming(0, { duration: 980, easing: Easing.inOut(Easing.cubic) });
     cardScale.value = withTiming(0.88, { duration: 980, easing: Easing.out(Easing.cubic) });
-    cardOpacity.value = withTiming(
-      0,
-      { duration: 220, delay: 820, easing: Easing.in(Easing.quad) },
-      (finished) => {
+    cardOpacity.value = withDelay(
+      820,
+      withTiming(0, { duration: 220, easing: Easing.in(Easing.quad) }, (finished) => {
         if (finished) {
           runOnJS(completeSubmit)(item.id);
         }
-      }
+      })
     );
   };
 
