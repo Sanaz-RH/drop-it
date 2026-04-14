@@ -1,17 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 
 import { loadDropStore, saveDropStore } from '@/src/storage/drop-storage';
 import { DropItem, DropStoreModel } from '@/src/types/drop-item';
-
-export type AppStateName = 'capture' | 'feedback' | 'held' | 'resurfacing' | 'closure';
+import {
+  createInitialUiState,
+  ritualReducer,
+  ritualTransitionMap,
+  RitualPhase,
+} from '@/src/state/drop-it-machine';
 
 const FEEDBACK_DELAY_MS = 1300;
 
+type ResurfaceReason = 'manual' | 'demo';
+
 export function useDropItController() {
-  const [state, setState] = useState<AppStateName>('capture');
+  const [ui, dispatch] = useReducer(ritualReducer, undefined, createInitialUiState);
   const [store, setStore] = useState<DropStoreModel | null>(null);
   const [draft, setDraft] = useState('');
-  const [activeItemId, setActiveItemId] = useState<string | null>(null);
 
   useEffect(() => {
     async function bootstrap() {
@@ -21,6 +26,18 @@ export function useDropItController() {
 
     bootstrap();
   }, []);
+
+  useEffect(() => {
+    if (ui.phase !== 'feedback') {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      dispatch({ type: 'FEEDBACK_COMPLETE' });
+    }, FEEDBACK_DELAY_MS);
+
+    return () => clearTimeout(timeout);
+  }, [ui.phase]);
 
   const persistStore = useCallback(async (next: DropStoreModel) => {
     setStore(next);
@@ -51,19 +68,42 @@ export function useDropItController() {
     };
 
     await persistStore(nextStore);
-    setActiveItemId(item.id);
     setDraft('');
-    setState('feedback');
-
-    setTimeout(() => {
-      setState('held');
-    }, FEEDBACK_DELAY_MS);
+    dispatch({ type: 'CAPTURE_SUBMITTED', itemId: item.id });
   }, [draft, persistStore, store]);
 
-  const transitionToResurfacing = useCallback((itemId: string) => {
-    setActiveItemId(itemId);
-    setState('resurfacing');
-  }, []);
+  const requestResurface = useCallback(
+    async (itemId: string, reason: ResurfaceReason = 'manual') => {
+      if (!store) {
+        return;
+      }
+
+      const now = new Date().toISOString();
+      const nextStore: DropStoreModel = {
+        ...store,
+        items: store.items.map((item) =>
+          item.id === itemId
+            ? {
+                ...item,
+                status: 'resurfaced',
+                resurfacedAt: now,
+                updatedAt: now,
+              }
+            : item
+        ),
+        updatedAt: now,
+      };
+
+      await persistStore(nextStore);
+      dispatch({ type: 'RESURFACE_REQUESTED', itemId });
+
+      if (__DEV__ && reason === 'demo') {
+        // Keep a minimal breadcrumb for demo sessions while avoiding product-facing UI coupling.
+        console.log(`[drop-it demo] Resurfaced held item ${itemId}`);
+      }
+    },
+    [persistStore, store]
+  );
 
   const closeItem = useCallback(
     async (itemId: string) => {
@@ -88,35 +128,48 @@ export function useDropItController() {
       };
 
       await persistStore(nextStore);
-      setActiveItemId(itemId);
-      setState('closure');
+      dispatch({ type: 'ITEM_CLOSED', itemId });
     },
     [persistStore, store]
   );
 
   const goToCapture = useCallback(() => {
-    setState('capture');
-    setActiveItemId(null);
-  }, []);
+    dispatch({ type: ui.phase === 'closure' ? 'RESET_RITUAL' : 'START_CAPTURE' });
+  }, [ui.phase]);
+
+  const demoResurfaceHeldItem = useCallback(async () => {
+    if (!store) {
+      return;
+    }
+
+    const nextHeldItem = store.items.find((item) => item.status === 'held');
+
+    if (!nextHeldItem) {
+      return;
+    }
+
+    await requestResurface(nextHeldItem.id, 'demo');
+  }, [requestResurface, store]);
 
   const items = useMemo(() => store?.items ?? [], [store]);
 
   const activeItem = useMemo(
-    () => items.find((item) => item.id === activeItemId) ?? null,
-    [activeItemId, items]
+    () => items.find((item) => item.id === ui.activeItemId) ?? null,
+    [items, ui.activeItemId]
   );
 
   return {
-    state,
-    setState,
+    state: ui.phase as RitualPhase,
     isReady: !!store,
     draft,
     setDraft,
     addItem,
     items,
     activeItem,
-    transitionToResurfacing,
+    transitionToResurfacing: requestResurface,
     closeItem,
     goToCapture,
+    demoResurfaceHeldItem,
+    transitionModel: ritualTransitionMap,
   };
 }
