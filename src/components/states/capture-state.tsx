@@ -1,5 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, {
   Easing,
@@ -12,8 +12,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { appColors, radii, spacing, typography } from '@/src/theme/tokens';
+import { experiments } from '@/src/config/experiments';
+import { useTiltToDrop } from '@/src/experiments/use-tilt-to-drop';
 import { useDropItController } from '@/src/state/use-drop-it-controller';
+import { appColors, radii, spacing, typography } from '@/src/theme/tokens';
 
 type Props = ReturnType<typeof useDropItController>;
 
@@ -35,6 +37,7 @@ export function CaptureState({
   const [cardText, setCardText] = useState('');
   const [slotCenterY, setSlotCenterY] = useState(0);
   const [inputCenterY, setInputCenterY] = useState(0);
+  const [tiltEnabled, setTiltEnabled] = useState(experiments.tiltToDrop.enabled);
 
   const heldCount = useMemo(() => items.filter((item) => item.status === 'held').length, [items]);
 
@@ -85,14 +88,14 @@ export function CaptureState({
     setInputCenterY(y + height / 2);
   };
 
-  const completeSubmit = (itemId: string) => {
+  const completeSubmit = useCallback((itemId: string) => {
     setIsSubmitting(false);
     setCardText('');
     onDropSuccess();
     commitCaptureTransition(itemId);
-  };
+  }, [commitCaptureTransition]);
 
-  const submit = async () => {
+  const submit = useCallback(async () => {
     if (isSubmitting) {
       return;
     }
@@ -126,7 +129,16 @@ export function CaptureState({
         }
       })
     );
-  };
+  }, [cardOpacity, cardScale, cardY, completeSubmit, commitCaptureTransition, inputCenterY, isSubmitting, prepareCaptureItem, slotCenterY]);
+
+  const shouldArmTiltGesture =
+    tiltEnabled && isReady && !isSubmitting && !inputFocused && draft.trim().length > 0;
+
+  useTiltToDrop({
+    enabled: experiments.tiltToDrop.enabled,
+    armed: shouldArmTiltGesture,
+    onTrigger: submit,
+  });
 
   return (
     <View style={styles.screen}>
@@ -158,6 +170,17 @@ export function CaptureState({
       </View>
 
       <View style={styles.inputWrap} onLayout={onInputLayout}>
+        {__DEV__ && experiments.tiltToDrop.enabled ? (
+          <View style={styles.experimentRow}>
+            <Pressable
+              style={({ pressed }) => [styles.devToggle, pressed && styles.devTogglePressed]}
+              onPress={() => setTiltEnabled((value) => !value)}>
+              <Text style={styles.devToggleText}>Tilt-to-drop: {tiltEnabled ? 'on' : 'off'}</Text>
+            </Pressable>
+            {tiltEnabled ? <Text style={styles.hintText}>tilt phone forward to release</Text> : null}
+          </View>
+        ) : null}
+
         <View style={[styles.inputBar, inputFocused && styles.inputBarFocused]}>
           <TextInput
             style={styles.input}
@@ -174,8 +197,7 @@ export function CaptureState({
           <Pressable
             style={({ pressed }) => [styles.sendButton, pressed && styles.sendButtonPressed]}
             onPress={submit}
-            disabled={!isReady || isSubmitting}
-          >
+            disabled={!isReady || isSubmitting}>
             <MaterialIcons name="north-east" size={16} color="#FFF" />
           </Pressable>
         </View>
@@ -280,6 +302,32 @@ const styles = StyleSheet.create({
   },
   inputWrap: {
     paddingBottom: spacing.lg,
+    gap: spacing.xs,
+  },
+  experimentRow: {
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: spacing.xs,
+  },
+  devToggle: {
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: '#D8DEEE',
+    backgroundColor: '#F4F6FC',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  devTogglePressed: {
+    opacity: 0.86,
+  },
+  devToggleText: {
+    ...typography.caption,
+    color: appColors.textPrimary,
+    fontWeight: '500',
+  },
+  hintText: {
+    ...typography.caption,
+    color: appColors.textMuted,
   },
   inputBar: {
     minHeight: 56,
