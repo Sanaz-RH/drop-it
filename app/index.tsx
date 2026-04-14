@@ -5,7 +5,7 @@ import { ClosureState } from '@/src/components/states/closure-state';
 import { FeedbackState } from '@/src/components/states/feedback-state';
 import { HeldState } from '@/src/components/states/held-state';
 import { ResurfacingState } from '@/src/components/states/resurfacing-state';
-import { appColors, radii, spacing } from '@/src/theme/tokens';
+import { appColors, spacing } from '@/src/theme/tokens';
 import { useDropItController } from '@/src/state/use-drop-it-controller';
 import { RitualPhase } from '@/src/state/drop-it-machine';
 
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: spacing.lg,
-    borderRadius: radii.xl,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
   },
 });

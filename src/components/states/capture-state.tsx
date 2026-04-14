@@ -31,6 +31,7 @@ export function CaptureState({
   items,
   isReady,
   onDropSuccess,
+  demoResurfaceHeldItem,
 }: Props) {
   const [inputFocused, setInputFocused] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,8 +75,8 @@ export function CaptureState({
 
   const onFocusChange = (focused: boolean) => {
     setInputFocused(focused);
-    ringScale.value = withTiming(focused ? 0.9 : 1, { duration: 520, easing: Easing.out(Easing.cubic) });
-    ringShiftY.value = withTiming(focused ? 24 : 0, { duration: 520, easing: Easing.out(Easing.cubic) });
+    ringScale.value = withTiming(focused ? 0.92 : 1, { duration: 440, easing: Easing.out(Easing.cubic) });
+    ringShiftY.value = withTiming(focused ? 20 : 0, { duration: 440, easing: Easing.out(Easing.cubic) });
   };
 
   const onSlotLayout = (event: LayoutChangeEvent) => {
@@ -93,7 +94,7 @@ export function CaptureState({
     setCardText('');
     onDropSuccess();
     commitCaptureTransition(itemId);
-  }, [commitCaptureTransition]);
+  }, [commitCaptureTransition, onDropSuccess]);
 
   const submit = useCallback(async () => {
     if (isSubmitting) {
@@ -119,23 +120,23 @@ export function CaptureState({
     cardScale.value = 1;
     cardOpacity.value = 1;
 
-    cardY.value = withTiming(0, { duration: 980, easing: Easing.inOut(Easing.cubic) });
-    cardScale.value = withTiming(0.88, { duration: 980, easing: Easing.out(Easing.cubic) });
+    cardY.value = withTiming(0, { duration: 860, easing: Easing.inOut(Easing.cubic) });
+    cardScale.value = withTiming(0.9, { duration: 860, easing: Easing.out(Easing.cubic) });
     cardOpacity.value = withDelay(
-      820,
+      740,
       withTiming(0, { duration: 220, easing: Easing.in(Easing.quad) }, (finished) => {
         if (finished) {
           runOnJS(completeSubmit)(item.id);
         }
       })
     );
-  }, [cardOpacity, cardScale, cardY, completeSubmit, commitCaptureTransition, inputCenterY, isSubmitting, prepareCaptureItem, slotCenterY]);
+  }, [cardOpacity, cardScale, cardY, completeSubmit, commitCaptureTransition, inputCenterY, isSubmitting, onDropSuccess, prepareCaptureItem, slotCenterY]);
 
   const shouldArmTiltGesture =
     tiltEnabled && isReady && !isSubmitting && !inputFocused && draft.trim().length > 0;
 
   useTiltToDrop({
-    enabled: experiments.tiltToDrop.enabled,
+    enabled: tiltEnabled,
     armed: shouldArmTiltGesture,
     onTrigger: submit,
   });
@@ -172,11 +173,23 @@ export function CaptureState({
       <View style={styles.inputWrap} onLayout={onInputLayout}>
         {__DEV__ && experiments.tiltToDrop.enabled ? (
           <View style={styles.experimentRow}>
-            <Pressable
-              style={({ pressed }) => [styles.devToggle, pressed && styles.devTogglePressed]}
-              onPress={() => setTiltEnabled((value) => !value)}>
-              <Text style={styles.devToggleText}>Tilt-to-drop: {tiltEnabled ? 'on' : 'off'}</Text>
-            </Pressable>
+            <View style={styles.devButtonRow}>
+              <Pressable
+                style={({ pressed }) => [styles.devToggle, pressed && styles.devTogglePressed]}
+                onPress={() => setTiltEnabled((value) => !value)}>
+                <Text style={styles.devToggleText}>Tilt: {tiltEnabled ? 'on' : 'off'}</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.devToggle, pressed && styles.devTogglePressed]}
+                onPress={() => setDraft('I keep rehearsing this conversation in my head.')}>
+                <Text style={styles.devToggleText}>Fill draft</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.devToggle, pressed && styles.devTogglePressed]}
+                onPress={demoResurfaceHeldItem}>
+                <Text style={styles.devToggleText}>Resurface now</Text>
+              </Pressable>
+            </View>
             {tiltEnabled ? <Text style={styles.hintText}>tilt phone forward to release</Text> : null}
           </View>
         ) : null}
@@ -209,7 +222,7 @@ export function CaptureState({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F7F7FC',
+    backgroundColor: appColors.background,
   },
   topBar: {
     alignItems: 'flex-end',
@@ -219,7 +232,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 2,
     borderRadius: radii.pill,
-    backgroundColor: '#EEF0F8',
+    backgroundColor: appColors.accentSoft,
   },
   pillText: {
     ...typography.caption,
@@ -230,7 +243,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xxxl,
   },
   slotArea: {
     width: SLOT_WIDTH,
@@ -245,7 +258,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     backgroundColor: '#DFE3EF',
     borderWidth: 1,
-    borderColor: '#D1D7E7',
+    borderColor: appColors.border,
   },
   ringsWrap: {
     width: RING_SIZE,
@@ -257,7 +270,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderRadius: radii.pill,
     borderWidth: 1,
-    borderColor: '#D9DEEB',
+    borderColor: appColors.border,
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
   ringOuter: {
@@ -279,7 +292,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#CFD5E6',
+    borderColor: appColors.border,
     backgroundColor: '#FFF',
   },
   floatingCard: {
@@ -290,7 +303,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#DADFEB',
+    borderColor: appColors.border,
     shadowColor: '#252C3B',
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -309,11 +322,17 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: spacing.xs,
   },
+  devButtonRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
   devToggle: {
     borderRadius: radii.pill,
     borderWidth: 1,
-    borderColor: '#D8DEEE',
-    backgroundColor: '#F4F6FC',
+    borderColor: appColors.border,
+    backgroundColor: appColors.surfaceSoft,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
@@ -333,7 +352,7 @@ const styles = StyleSheet.create({
     minHeight: 56,
     borderRadius: radii.pill,
     borderWidth: 1,
-    borderColor: '#D9DEEB',
+    borderColor: appColors.border,
     backgroundColor: '#FFF',
     paddingLeft: spacing.lg,
     paddingRight: spacing.sm,

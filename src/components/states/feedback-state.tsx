@@ -19,7 +19,7 @@ import { useDropItController } from '@/src/state/use-drop-it-controller';
 
 type Props = ReturnType<typeof useDropItController>;
 
-const RING_SIZE = 168;
+const RING_SIZE = 176;
 
 export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfirmation }: Props) {
   const ringProgress = useSharedValue(0);
@@ -36,14 +36,14 @@ export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfir
     checkProgress.value = 0;
 
     ringProgress.value = withTiming(1, {
-      duration: 1400,
+      duration: 1200,
       easing: Easing.out(Easing.cubic),
     });
 
     checkProgress.value = withDelay(
-      900,
+      760,
       withTiming(1, {
-        duration: 900,
+        duration: 820,
         easing: Easing.inOut(Easing.cubic),
       })
     );
@@ -91,7 +91,7 @@ export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfir
   }));
 
   return (
-    <StateShell title="Received" subtitle="The system has taken this from you.">
+    <StateShell title="Received" subtitle="That weight has left your hands.">
       <View style={styles.content}>
         <View style={styles.confirmWrap}>
           <Animated.View style={[styles.ring, styles.outerRing, outerRingStyle]} />
@@ -105,14 +105,14 @@ export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfir
           </View>
         </View>
 
-        <Animated.Text entering={FadeIn.delay(1300).duration(700)} style={styles.primaryCopy}>
+        <Animated.Text entering={FadeIn.delay(1120).duration(640)} style={styles.primaryCopy}>
           I have this.
         </Animated.Text>
-        <Animated.Text entering={FadeIn.delay(2050).duration(700)} style={styles.secondaryCopy}>
+        <Animated.Text entering={FadeIn.delay(1720).duration(640)} style={styles.secondaryCopy}>
           let go.
         </Animated.Text>
 
-        <Animated.View entering={FadeInUp.delay(2400).duration(650)} style={styles.card}>
+        <Animated.View entering={FadeInUp.delay(2080).duration(620)} style={styles.card}>
           <Text numberOfLines={3} style={styles.cardText}>
             “{activeItem?.text ?? 'Your thought'}”
           </Text>
@@ -124,16 +124,14 @@ export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfir
             return (
               <Animated.View
                 key={item.id}
-                entering={
-                  isNewest ? SlideInRight.delay(2550).duration(550).easing(Easing.out(Easing.cubic)) : FadeIn.duration(360)
-                }
+                entering={isNewest ? SlideInRight.delay(2280).duration(420).easing(Easing.out(Easing.cubic)) : FadeIn.duration(300)}
                 style={[styles.dot, isNewest && styles.dotActive]}
               />
             );
           })}
         </View>
 
-        <Animated.View entering={FadeIn.delay(3000).duration(700)} style={styles.actionWrap}>
+        <Animated.View entering={FadeIn.delay(2480).duration(640)} style={styles.actionWrap}>
           <Pressable onPress={goToCapture} style={({ pressed }) => [styles.actionButton, pressed && styles.actionPressed]}>
             <Text style={styles.actionText}>+ drop another</Text>
           </Pressable>
@@ -147,7 +145,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     alignItems: 'center',
-    paddingTop: spacing.lg,
+    paddingTop: spacing.md,
   },
   confirmWrap: {
     width: RING_SIZE,
@@ -177,7 +175,7 @@ const styles = StyleSheet.create({
     width: RING_SIZE * 0.78,
     height: RING_SIZE * 0.78,
     borderWidth: 1.5,
-    shadowColor: '#4E8DFF',
+    shadowColor: '#5D8DEB',
     shadowOpacity: 0.14,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
@@ -192,7 +190,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     height: 3,
     borderRadius: radii.pill,
-    backgroundColor: '#4E8DFF',
+    backgroundColor: '#5D8DEB',
   },
   checkStem: {
     width: 18,
@@ -220,8 +218,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
     borderWidth: 1,
-    borderColor: '#D2DDF5',
-    backgroundColor: '#FFFFFF',
+    borderColor: appColors.border,
+    backgroundColor: appColors.surface,
+    shadowColor: '#202A45',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
   },
   cardText: {
     ...typography.body,
@@ -238,11 +240,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: radii.pill,
-    backgroundColor: '#CED8F3',
+    backgroundColor: '#CCD5ED',
   },
   dotActive: {
     width: 18,
-    backgroundColor: '#8AA9EA',
+    backgroundColor: '#8BA2DD',
   },
   actionWrap: {
     marginTop: 'auto',

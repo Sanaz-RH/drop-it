@@ -7,18 +7,17 @@ export const seededDropData: DropStoreModel = {
   items: [
     {
       id: 'seed-1',
-      text: 'Email the landlord about water pressure.',
+      text: 'I keep replaying that awkward moment from dinner.',
       status: 'held',
       createdAt: now,
       updatedAt: now,
     },
     {
       id: 'seed-2',
-      text: 'Sketch weekend meal plan.',
-      status: 'resurfaced',
+      text: 'I am carrying a lot of pressure about tomorrow.',
+      status: 'held',
       createdAt: now,
       updatedAt: now,
-      resurfacedAt: now,
     },
   ],
 };
