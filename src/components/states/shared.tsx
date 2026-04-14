@@ -6,8 +6,10 @@ import { appColors, radii, spacing, typography } from '@/src/theme/tokens';
 export function StateShell({ title, subtitle, children }: PropsWithChildren<{ title: string; subtitle: string }>) {
   return (
     <View style={styles.shell}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
+      </View>
       <View style={styles.body}>{children}</View>
     </View>
   );
@@ -25,7 +27,11 @@ const styles = StyleSheet.create({
   shell: {
     flex: 1,
     backgroundColor: appColors.background,
-    gap: spacing.sm,
+    gap: spacing.md,
+  },
+  header: {
+    gap: spacing.xs,
+    paddingTop: spacing.xs,
   },
   title: {
     ...typography.title,
@@ -36,12 +42,12 @@ const styles = StyleSheet.create({
     color: appColors.textMuted,
   },
   body: {
-    marginTop: spacing.lg,
-    borderRadius: radii.lg,
+    marginTop: spacing.md,
+    borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: appColors.border,
-    backgroundColor: appColors.surface,
-    padding: spacing.lg,
+    backgroundColor: appColors.surfaceSoft,
+    padding: spacing.xl,
     gap: spacing.md,
     flex: 1,
   },

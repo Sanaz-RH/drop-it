@@ -40,23 +40,34 @@ export function HeldState({ items, transitionToResurfacing, closeItem }: Props) 
     <View style={styles.screen}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>held</Text>
-        <Text style={styles.count}>{heldItems.length}</Text>
+        <View style={styles.countPill}>
+          <Text style={styles.count}>{heldItems.length}</Text>
+        </View>
       </View>
 
-      <View style={styles.list}>
-        {heldItems.map((item) => (
-          <Pressable
-            key={item.id}
-            style={styles.itemCard}
-            onLongPress={() => showActions(item.id)}
-            delayLongPress={250}>
-            <View style={styles.stamp} />
-            <Text style={styles.itemText}>{item.text}</Text>
-          </Pressable>
-        ))}
-      </View>
+      {heldItems.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyTitle}>quiet for now</Text>
+          <Text style={styles.emptyCopy}>
+            New drops will rest here until they resurface.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.list}>
+          {heldItems.map((item) => (
+            <Pressable
+              key={item.id}
+              style={({ pressed }) => [styles.itemCard, pressed && styles.itemCardPressed]}
+              onLongPress={() => showActions(item.id)}
+              delayLongPress={250}>
+              <View style={styles.stamp} />
+              <Text style={styles.itemText}>{item.text}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
 
-      <Text style={styles.footer}>nothing is lost.</Text>
+      <Text style={styles.footer}>long press an item for actions.</Text>
     </View>
   );
 }
@@ -64,11 +75,11 @@ export function HeldState({ items, transitionToResurfacing, closeItem }: Props) 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#FAF9F7',
+    backgroundColor: appColors.background,
     borderWidth: 1,
-    borderColor: '#E5E1EF',
+    borderColor: appColors.border,
     borderRadius: radii.xl,
-    padding: spacing.lg,
+    padding: spacing.xl,
     gap: spacing.md,
   },
   headerRow: {
@@ -78,21 +89,28 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.title,
-    color: '#443B64',
+    color: appColors.textPrimary,
     textTransform: 'lowercase',
+  },
+  countPill: {
+    borderRadius: radii.pill,
+    backgroundColor: appColors.accentSoft,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs,
   },
   count: {
     ...typography.caption,
-    color: '#7E7699',
+    color: appColors.textMuted,
+    fontWeight: '500',
   },
   list: {
     flex: 1,
-    gap: 12,
+    gap: spacing.sm + 2,
   },
   itemCard: {
     borderWidth: 1,
-    borderColor: '#E0DBEC',
-    borderRadius: radii.md,
+    borderColor: appColors.border,
+    borderRadius: radii.lg,
     backgroundColor: appColors.surface,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
@@ -100,12 +118,16 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.md,
   },
+  itemCardPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.995 }],
+  },
   stamp: {
     width: 10,
     height: 10,
     borderRadius: radii.pill,
     borderWidth: 1,
-    borderColor: '#7A709C',
+    borderColor: appColors.accent,
     marginTop: 7,
   },
   itemText: {
@@ -113,11 +135,30 @@ const styles = StyleSheet.create({
     color: appColors.textPrimary,
     flex: 1,
   },
+  emptyCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: appColors.border,
+    borderRadius: radii.lg,
+    backgroundColor: appColors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+    gap: spacing.xs,
+  },
+  emptyTitle: {
+    ...typography.bodyMedium,
+    color: appColors.textPrimary,
+    textTransform: 'lowercase',
+  },
+  emptyCopy: {
+    ...typography.caption,
+    color: appColors.textMuted,
+    textAlign: 'center',
+  },
   footer: {
     ...typography.caption,
     color: appColors.textMuted,
-    fontStyle: 'italic',
-    fontSize: 12,
-    lineHeight: 16,
+    textTransform: 'lowercase',
   },
 });

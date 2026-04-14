@@ -69,7 +69,8 @@ export function ResurfacingState({ activeItem, dismissResurfacedItem, closeItem 
   return (
     <View style={styles.screen}>
       <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
-      <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>        <Text style={styles.nowLabel}>NOW</Text>
+      <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
+        <Text style={styles.nowLabel}>NOW</Text>
         <Text style={styles.itemText}>{activeItem?.text ?? 'No active item yet.'}</Text>
         <Text style={styles.reassurance}>I brought this back.</Text>
 
@@ -107,12 +108,12 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
     borderLeftWidth: 4,
-    borderLeftColor: '#4E9B72',
+    borderLeftColor: appColors.success,
     borderWidth: 1,
-    borderColor: '#CBE6D8',
-    backgroundColor: '#F3FBF6',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    borderColor: '#CEE4D8',
+    backgroundColor: '#F1FAF5',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
     paddingBottom: spacing.xl,
     gap: spacing.md,
   },
@@ -120,17 +121,16 @@ const styles = StyleSheet.create({
     ...typography.caption,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
-    color: '#3D8B65',
+    color: '#3F8868',
     fontWeight: '600',
   },
   itemText: {
     ...typography.body,
-    color: '#173326',
+    color: '#183229',
   },
   reassurance: {
     ...typography.caption,
-    color: '#4A6A59',
-    fontStyle: 'italic',
+    color: '#506D60',
   },
   buttonRow: {
     marginTop: spacing.sm,
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     borderColor: '#C3DFCF',
   },
   doneButton: {
-    backgroundColor: '#4E9B72',
+    backgroundColor: appColors.success,
   },
   laterText: {
     ...typography.bodyMedium,

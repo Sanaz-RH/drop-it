@@ -1,11 +1,13 @@
 export const appColors = {
-  background: '#F7F7FC',
+  background: '#F5F6FB',
   surface: '#FFFFFF',
-  textPrimary: '#1D2330',
-  textMuted: '#70778C',
-  border: '#E3E6F0',
-  accent: '#8A93AD',
-  success: '#8FB4A7',
+  surfaceSoft: '#F0F2FA',
+  textPrimary: '#1B2231',
+  textMuted: '#6D768E',
+  border: '#DDE2EF',
+  accent: '#8A95B2',
+  accentSoft: '#E6EBFA',
+  success: '#7FAE9A',
 };
 
 export const spacing = {
@@ -15,35 +17,37 @@ export const spacing = {
   lg: 16,
   xl: 24,
   xxl: 32,
+  xxxl: 40,
 };
 
 export const radii = {
   sm: 8,
   md: 12,
-  lg: 16,
-  xl: 24,
+  lg: 18,
+  xl: 26,
   pill: 999,
 };
 
 export const typography = {
   title: {
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 30,
+    lineHeight: 36,
     fontWeight: '500' as const,
+    letterSpacing: -0.2,
   },
   body: {
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: 25,
     fontWeight: '400' as const,
   },
   bodyMedium: {
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: 25,
     fontWeight: '500' as const,
   },
   caption: {
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
     fontWeight: '400' as const,
   },
 };

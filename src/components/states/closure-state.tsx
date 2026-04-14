@@ -6,10 +6,10 @@ import { useDropItController } from '@/src/state/use-drop-it-controller';
 
 type Props = ReturnType<typeof useDropItController>;
 
-const CARD_DROP_MS = 950;
-const SHREDDER_FADE_MS = 420;
-const GONE_FADE_MS = 550;
-const HOLD_MS = 1700;
+const CARD_DROP_MS = 840;
+const SHREDDER_FADE_MS = 360;
+const GONE_FADE_MS = 500;
+const HOLD_MS = 1400;
 const STRIP_COUNT = 9;
 
 export function ClosureState({ activeItem, completeClosure, onClosureSound, onClosureComplete }: Props) {
@@ -63,7 +63,7 @@ export function ClosureState({ activeItem, completeClosure, onClosureSound, onCl
       Animated.delay(HOLD_MS),
     ]);
 
-    timers.push(setTimeout(() => setShowStrips(true), 180));
+    timers.push(setTimeout(() => setShowStrips(true), 120));
 
     run.start(({ finished }) => {
       if (finished) {
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     maxWidth: 340,
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: '#DADFF0',
+    borderColor: appColors.border,
     backgroundColor: appColors.surface,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
@@ -228,8 +228,8 @@ const styles = StyleSheet.create({
   shredderTop: {
     width: 192,
     height: 42,
-    borderRadius: radii.md,
-    backgroundColor: '#C8D1E8',
+    borderRadius: radii.lg,
+    backgroundColor: '#C7D1EA',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -237,14 +237,14 @@ const styles = StyleSheet.create({
     width: 114,
     height: 8,
     borderRadius: radii.pill,
-    backgroundColor: '#7D86A2',
+    backgroundColor: '#7A86A7',
   },
   shredderBody: {
     width: 168,
     height: 62,
-    borderBottomLeftRadius: radii.md,
-    borderBottomRightRadius: radii.md,
-    backgroundColor: '#DFE6F5',
+    borderBottomLeftRadius: radii.lg,
+    borderBottomRightRadius: radii.lg,
+    backgroundColor: '#E0E7F6',
     marginTop: -1,
   },
   stripsRow: {
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 34,
     borderRadius: radii.sm,
-    backgroundColor: '#BFCDE7',
+    backgroundColor: '#C3D0E8',
   },
   goneWrap: {
     position: 'absolute',
