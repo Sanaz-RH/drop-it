@@ -1,19 +1,17 @@
-import * as FileSystem from 'expo-file-system/legacy';
+import { File, Paths } from 'expo-file-system';
 
 import { seededDropData } from '@/src/data/seed-data';
 import { DropStoreModel } from '@/src/types/drop-item';
 
-const STORAGE_PATH = `${FileSystem.documentDirectory}drop-it-store.json`;
+const STORAGE_FILE = new File(Paths.document, 'drop-it-store.json');
 
 export async function loadDropStore(): Promise<DropStoreModel> {
-  const info = await FileSystem.getInfoAsync(STORAGE_PATH);
-
-  if (!info.exists) {
+  if (!STORAGE_FILE.exists) {
     await saveDropStore(seededDropData);
     return seededDropData;
   }
 
-  const json = await FileSystem.readAsStringAsync(STORAGE_PATH);
+  const json = await STORAGE_FILE.text();
 
   if (!json) {
     return seededDropData;
@@ -23,5 +21,9 @@ export async function loadDropStore(): Promise<DropStoreModel> {
 }
 
 export async function saveDropStore(store: DropStoreModel): Promise<void> {
-  await FileSystem.writeAsStringAsync(STORAGE_PATH, JSON.stringify(store));
+  if (!STORAGE_FILE.exists) {
+    STORAGE_FILE.create();
+  }
+
+  STORAGE_FILE.write(JSON.stringify(store));
 }
