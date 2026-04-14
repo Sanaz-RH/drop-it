@@ -6,13 +6,14 @@ import { FeedbackState } from '@/src/components/states/feedback-state';
 import { HeldState } from '@/src/components/states/held-state';
 import { ResurfacingState } from '@/src/components/states/resurfacing-state';
 import { appColors, radii, spacing } from '@/src/theme/tokens';
-import { AppStateName, useDropItController } from '@/src/state/use-drop-it-controller';
+import { useDropItController } from '@/src/state/use-drop-it-controller';
+import { RitualPhase } from '@/src/state/drop-it-machine';
 
-const stateComponents: Record<AppStateName, React.ComponentType<ReturnType<typeof useDropItController>>> = {
+const stateComponents: Record<RitualPhase, React.ComponentType<ReturnType<typeof useDropItController>>> = {
   capture: CaptureState,
   feedback: FeedbackState,
   held: HeldState,
-  resurfacing: ResurfacingState,
+  resurface: ResurfacingState,
   closure: ClosureState,
 };
 

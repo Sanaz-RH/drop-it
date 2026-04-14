@@ -6,7 +6,7 @@ import { useDropItController } from '@/src/state/use-drop-it-controller';
 
 type Props = ReturnType<typeof useDropItController>;
 
-export function HeldState({ items, transitionToResurfacing, goToCapture }: Props) {
+export function HeldState({ items, transitionToResurfacing, goToCapture, demoResurfaceHeldItem }: Props) {
   const heldItems = items.filter((item) => item.status === 'held');
 
   return (
@@ -19,7 +19,10 @@ export function HeldState({ items, transitionToResurfacing, goToCapture }: Props
           </View>
         ))}
       </View>
-      <QuietButton label="Capture another" onPress={goToCapture} />
+      <View style={styles.actions}>
+        <QuietButton label="Capture another" onPress={goToCapture} />
+        {__DEV__ ? <QuietButton label="Demo: resurface next" onPress={demoResurfaceHeldItem} /> : null}
+      </View>
     </StateShell>
   );
 }
@@ -34,5 +37,9 @@ const styles = StyleSheet.create({
   itemText: {
     ...typography.body,
     color: appColors.textPrimary,
+  },
+  actions: {
+    gap: 8,
+    marginTop: 8,
   },
 });
