@@ -13,6 +13,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { StampMark, getStampLabelForItem, getStampRotationForItem } from '@/src/components/stamp-mark';
 import { StateShell } from '@/src/components/states/shared';
 import { appColors, radii, spacing, typography } from '@/src/theme/tokens';
 import { useDropItController } from '@/src/state/use-drop-it-controller';
@@ -24,8 +25,11 @@ const RING_SIZE = 176;
 export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfirmation }: Props) {
   const ringProgress = useSharedValue(0);
   const checkProgress = useSharedValue(0);
+  const stampProgress = useSharedValue(0);
 
   const heldItems = items.filter((item) => item.status === 'held');
+  const stampLabel = getStampLabelForItem(activeItem?.id);
+  const stampRotation = getStampRotationForItem(activeItem?.id);
 
   useEffect(() => {
     if (activeItem?.id) {
@@ -34,6 +38,7 @@ export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfir
 
     ringProgress.value = 0;
     checkProgress.value = 0;
+    stampProgress.value = 0;
 
     ringProgress.value = withTiming(1, {
       duration: 1200,
@@ -47,7 +52,15 @@ export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfir
         easing: Easing.inOut(Easing.cubic),
       })
     );
-  }, [activeItem?.id, checkProgress, onFeedbackConfirmation, ringProgress]);
+
+    stampProgress.value = withDelay(
+      2320,
+      withTiming(1, {
+        duration: 760,
+        easing: Easing.bezierFn(0.25, 0.92, 0.35, 1),
+      })
+    );
+  }, [activeItem?.id, checkProgress, onFeedbackConfirmation, ringProgress, stampProgress]);
 
   const outerRingStyle = useAnimatedStyle(() => ({
     opacity: interpolate(ringProgress.value, [0, 0.62, 1], [1, 0.38, 0]),
@@ -90,6 +103,14 @@ export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfir
     ],
   }));
 
+  const stampStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(stampProgress.value, [0, 0.2, 0.52, 1], [0, 0.88, 1, 0.95]),
+    transform: [
+      { translateY: interpolate(stampProgress.value, [0, 0.42, 0.68, 1], [-24, 10, -5, 0]) },
+      { scale: interpolate(stampProgress.value, [0, 0.46, 0.7, 1], [0.78, 1.03, 0.97, 1]) },
+    ],
+  }));
+
   return (
     <StateShell title="Received" subtitle="I'm holding it with care.">
       <View style={styles.content}>
@@ -112,11 +133,21 @@ export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfir
           you can let go.
         </Animated.Text>
 
-        <Animated.View entering={FadeInUp.delay(2080).duration(620)} style={styles.card}>
-          <Text numberOfLines={3} style={styles.cardText}>
-            “{activeItem?.text ?? 'Your thought'}”
-          </Text>
-        </Animated.View>
+        <View style={styles.cardWrap}>
+          <Animated.View entering={FadeInUp.delay(2080).duration(620)} style={styles.card}>
+            <Text numberOfLines={3} style={styles.cardText}>
+              “{activeItem?.text ?? 'Your thought'}”
+            </Text>
+          </Animated.View>
+
+          <StampMark
+            label={stampLabel}
+            size="large"
+            rotation={stampRotation}
+            style={styles.cardStamp}
+            animatedStyle={stampStyle}
+          />
+        </View>
 
         <View style={styles.dotsWrap}>
           {heldItems.map((item, index) => {
@@ -212,7 +243,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   card: {
-    marginTop: spacing.xl,
     width: '100%',
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
@@ -224,6 +254,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
+  },
+  cardWrap: {
+    marginTop: spacing.xl,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardStamp: {
+    position: 'absolute',
+    top: -26,
+    right: -8,
   },
   cardText: {
     ...typography.body,
