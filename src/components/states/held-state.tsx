@@ -1,4 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import { useState } from 'react';
 import { ActionSheetIOS, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { StampMark, getStampLabelForItem, getStampRotationForItem } from '@/src/components/stamp-mark';
@@ -9,8 +10,24 @@ type Props = ReturnType<typeof useDropItController>;
 
 export function HeldState({ items, transitionToResurfacing, closeItem, goToCapture }: Props) {
   const heldItems = items.filter((item) => item.status === 'held');
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const supportsClickActions = Platform.OS === 'web';
+
+  const runAction = (itemId: string, action: 'resurface' | 'close') => {
+    if (action === 'resurface') {
+      transitionToResurfacing(itemId);
+      return;
+    }
+
+    closeItem(itemId);
+  };
 
   const showActions = (itemId: string) => {
+    if (supportsClickActions) {
+      setActiveItemId((currentId) => (currentId === itemId ? null : itemId));
+      return;
+    }
+
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -19,11 +36,11 @@ export function HeldState({ items, transitionToResurfacing, closeItem, goToCaptu
         },
         (selectedIndex) => {
           if (selectedIndex === 1) {
-            transitionToResurfacing(itemId);
+            runAction(itemId, 'resurface');
           }
 
           if (selectedIndex === 2) {
-            closeItem(itemId);
+            runAction(itemId, 'close');
           }
         }
       );
@@ -33,8 +50,8 @@ export function HeldState({ items, transitionToResurfacing, closeItem, goToCaptu
 
     Alert.alert('held item', 'what would you like to do?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'bring this back now', onPress: () => transitionToResurfacing(itemId) },
-      { text: 'let it go', onPress: () => closeItem(itemId) },
+      { text: 'bring this back now', onPress: () => runAction(itemId, 'resurface') },
+      { text: 'let it go', onPress: () => runAction(itemId, 'close') },
     ]);
   };
 
@@ -60,23 +77,70 @@ export function HeldState({ items, transitionToResurfacing, closeItem, goToCaptu
       ) : (
         <View style={styles.list}>
           {heldItems.map((item) => (
-            <Pressable
-              key={item.id}
-              style={({ pressed }) => [styles.itemCard, pressed && styles.itemCardPressed]}
-              onLongPress={() => showActions(item.id)}
-              delayLongPress={250}>
-              <StampMark
-                label={getStampLabelForItem(item.id)}
-                rotation={getStampRotationForItem(item.id)}
-                style={styles.stamp}
-              />
-              <Text style={styles.itemText}>{item.text}</Text>
-            </Pressable>
+            <View key={item.id} style={styles.cardGroup}>
+              <Pressable
+                style={({ pressed, hovered, focused }) => [
+                  styles.itemCard,
+                  pressed && styles.itemCardPressed,
+                  (hovered || focused || activeItemId === item.id) && styles.itemCardInteractive,
+                ]}
+                onLongPress={() => showActions(item.id)}
+                onPress={supportsClickActions ? () => showActions(item.id) : undefined}
+                delayLongPress={250}>
+                <StampMark
+                  label={getStampLabelForItem(item.id)}
+                  rotation={getStampRotationForItem(item.id)}
+                  style={styles.stamp}
+                />
+                <Text style={styles.itemText}>{item.text}</Text>
+                {supportsClickActions ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Show actions for: ${item.text}`}
+                    hitSlop={8}
+                    style={({ pressed, hovered, focused }) => [
+                      styles.menuButton,
+                      (hovered || focused || pressed) && styles.menuButtonInteractive,
+                    ]}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      showActions(item.id);
+                    }}>
+                    <MaterialIcons name="more-horiz" size={18} color={appColors.textMuted} />
+                  </Pressable>
+                ) : null}
+              </Pressable>
+
+              {supportsClickActions && activeItemId === item.id ? (
+                <View style={styles.inlineActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    style={({ pressed, hovered, focused }) => [
+                      styles.actionButton,
+                      (pressed || hovered || focused) && styles.actionButtonInteractive,
+                    ]}
+                    onPress={() => runAction(item.id, 'resurface')}>
+                    <Text style={styles.actionText}>bring this back now</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    style={({ pressed, hovered, focused }) => [
+                      styles.actionButton,
+                      (pressed || hovered || focused) && styles.actionButtonInteractive,
+                    ]}
+                    onPress={() => runAction(item.id, 'close')}>
+                    <Text style={styles.actionText}>let it go</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+            </View>
           ))}
         </View>
       )}
 
-      <Text style={styles.footer}>long press an item for actions.</Text>
+      <Text style={styles.footer}>
+        {supportsClickActions ? 'click an item (or •••) for actions.' : 'long press an item for actions.'}
+      </Text>
     </View>
   );
 }
@@ -130,6 +194,9 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.sm + 2,
   },
+  cardGroup: {
+    gap: spacing.xs,
+  },
   itemCard: {
     borderWidth: 1,
     borderColor: appColors.border,
@@ -140,6 +207,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.md,
+  },
+  itemCardInteractive: {
+    borderColor: appColors.textMuted,
   },
   itemCardPressed: {
     opacity: 0.8,
@@ -156,6 +226,43 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: appColors.textPrimary,
     flex: 1,
+  },
+  menuButton: {
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -2,
+  },
+  menuButtonInteractive: {
+    backgroundColor: appColors.accentSoft,
+    borderColor: appColors.border,
+  },
+  inlineActions: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    justifyContent: 'flex-end',
+    paddingRight: spacing.xs,
+  },
+  actionButton: {
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: appColors.border,
+    backgroundColor: appColors.surface,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs,
+  },
+  actionButtonInteractive: {
+    borderColor: appColors.textMuted,
+    backgroundColor: appColors.accentSoft,
+  },
+  actionText: {
+    ...typography.caption,
+    color: appColors.textPrimary,
+    textTransform: 'lowercase',
   },
   emptyCard: {
     flex: 1,
