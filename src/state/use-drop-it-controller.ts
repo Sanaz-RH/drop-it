@@ -1,14 +1,9 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 
 import { useRitualFeedback } from '@/src/hooks/use-ritual-feedback';
+import { createInitialUiState, ritualReducer, ritualTransitionMap, RitualPhase } from '@/src/state/drop-it-machine';
 import { loadDropStore, saveDropStore } from '@/src/storage/drop-storage';
 import { DropItem, DropStoreModel } from '@/src/types/drop-item';
-import {
-  createInitialUiState,
-  ritualReducer,
-  ritualTransitionMap,
-  RitualPhase,
-} from '@/src/state/drop-it-machine';
 
 const FEEDBACK_DELAY_MS = 5200;
 
@@ -104,7 +99,6 @@ export function useDropItController() {
       dispatch({ type: 'RESURFACE_REQUESTED', itemId });
 
       if (__DEV__ && reason === 'demo') {
-        // Keep a minimal breadcrumb for demo sessions while avoiding product-facing UI coupling.
         console.log(`[drop-it demo] Resurfaced held item ${itemId}`);
       }
     },
@@ -190,26 +184,23 @@ export function useDropItController() {
     dispatch({ type: ui.phase === 'closure' ? 'RESET_RITUAL' : 'START_CAPTURE' });
   }, [ui.phase]);
 
-  const demoResurfaceHeldItem = useCallback(async () => {
-    if (!store) {
-      return;
-    }
-
-    const nextHeldItem = store.items.find((item) => item.status === 'held');
-
-    if (!nextHeldItem) {
-      return;
-    }
-
-    await requestResurface(nextHeldItem.id, 'demo');
-  }, [requestResurface, store]);
-
   const items = useMemo(() => store?.items ?? [], [store]);
 
   const activeItem = useMemo(
     () => items.find((item) => item.id === ui.activeItemId) ?? null,
     [items, ui.activeItemId]
   );
+
+  const latestHeldItem = useMemo(() => items.find((item) => item.status === 'held') ?? null, [items]);
+
+  const resurfaceNow = useCallback(async () => {
+    if (!latestHeldItem) {
+      return false;
+    }
+
+    await requestResurface(latestHeldItem.id, 'demo');
+    return true;
+  }, [latestHeldItem, requestResurface]);
 
   return {
     state: ui.phase as RitualPhase,
@@ -225,7 +216,8 @@ export function useDropItController() {
     closeItem,
     completeClosure,
     goToCapture,
-    demoResurfaceHeldItem,
+    resurfaceNow,
+    canResurfaceNow: !!latestHeldItem,
     transitionModel: ritualTransitionMap,
     onDropSuccess: ritualFeedback.onDropSuccess,
     onFeedbackConfirmation: ritualFeedback.onFeedbackConfirmation,
