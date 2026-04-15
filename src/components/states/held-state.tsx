@@ -1,6 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { ActionSheetIOS, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { StampMark, getStampLabelForItem, getStampRotationForItem } from '@/src/components/stamp-mark';
 import { useDropItController } from '@/src/state/use-drop-it-controller';
 import { appColors, radii, spacing, typography } from '@/src/theme/tokens';
 
@@ -64,7 +65,11 @@ export function HeldState({ items, transitionToResurfacing, closeItem, goToCaptu
               style={({ pressed }) => [styles.itemCard, pressed && styles.itemCardPressed]}
               onLongPress={() => showActions(item.id)}
               delayLongPress={250}>
-              <View style={styles.stamp} />
+              <StampMark
+                label={getStampLabelForItem(item.id)}
+                rotation={getStampRotationForItem(item.id)}
+                style={styles.stamp}
+              />
               <Text style={styles.itemText}>{item.text}</Text>
             </Pressable>
           ))}
@@ -141,12 +146,11 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.995 }],
   },
   stamp: {
-    width: 10,
-    height: 10,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: appColors.accent,
-    marginTop: 7,
+    width: 58,
+    height: 58,
+    marginTop: spacing.xs,
+    marginLeft: -2,
+    flexShrink: 0,
   },
   itemText: {
     ...typography.body,
