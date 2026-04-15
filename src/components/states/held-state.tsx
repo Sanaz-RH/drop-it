@@ -1,11 +1,12 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import { ActionSheetIOS, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { appColors, radii, spacing, typography } from '@/src/theme/tokens';
 import { useDropItController } from '@/src/state/use-drop-it-controller';
+import { appColors, radii, spacing, typography } from '@/src/theme/tokens';
 
 type Props = ReturnType<typeof useDropItController>;
 
-export function HeldState({ items, transitionToResurfacing, closeItem }: Props) {
+export function HeldState({ items, transitionToResurfacing, closeItem, goToCapture }: Props) {
   const heldItems = items.filter((item) => item.status === 'held');
 
   const showActions = (itemId: string) => {
@@ -39,6 +40,11 @@ export function HeldState({ items, transitionToResurfacing, closeItem }: Props) 
   return (
     <View style={styles.screen}>
       <View style={styles.headerRow}>
+        <Pressable style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]} onPress={goToCapture}>
+          <MaterialIcons name="arrow-back-ios-new" size={14} color={appColors.textMuted} />
+          <Text style={styles.backText}>back</Text>
+        </Pressable>
+
         <Text style={styles.title}>held</Text>
         <View style={styles.countPill}>
           <Text style={styles.count}>{heldItems.length}</Text>
@@ -48,9 +54,7 @@ export function HeldState({ items, transitionToResurfacing, closeItem }: Props) 
       {heldItems.length === 0 ? (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyTitle}>quiet for now</Text>
-          <Text style={styles.emptyCopy}>
-            New drops will rest here until they resurface.
-          </Text>
+          <Text style={styles.emptyCopy}>New drops will rest here until they resurface.</Text>
         </View>
       ) : (
         <View style={styles.list}>
@@ -85,7 +89,21 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'baseline',
+    alignItems: 'center',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: spacing.xs,
+    paddingRight: spacing.sm,
+  },
+  backButtonPressed: {
+    opacity: 0.7,
+  },
+  backText: {
+    ...typography.caption,
+    color: appColors.textMuted,
   },
   title: {
     ...typography.title,

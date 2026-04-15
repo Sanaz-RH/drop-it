@@ -91,7 +91,7 @@ export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfir
   }));
 
   return (
-    <StateShell title="Received" subtitle="That weight has left your hands.">
+    <StateShell title="Received" subtitle="I'm holding it with care.">
       <View style={styles.content}>
         <View style={styles.confirmWrap}>
           <Animated.View style={[styles.ring, styles.outerRing, outerRingStyle]} />
@@ -106,10 +106,10 @@ export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfir
         </View>
 
         <Animated.Text entering={FadeIn.delay(1120).duration(640)} style={styles.primaryCopy}>
-          I have this.
+          I'll hold this for you.
         </Animated.Text>
         <Animated.Text entering={FadeIn.delay(1720).duration(640)} style={styles.secondaryCopy}>
-          let go.
+          you can let go.
         </Animated.Text>
 
         <Animated.View entering={FadeInUp.delay(2080).duration(620)} style={styles.card}>

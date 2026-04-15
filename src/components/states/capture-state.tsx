@@ -1,8 +1,9 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LayoutChangeEvent, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, {
   Easing,
+  interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -20,8 +21,47 @@ import { appColors, radii, spacing, typography } from '@/src/theme/tokens';
 type Props = ReturnType<typeof useDropItController>;
 
 const RING_SIZE = 220;
-const SLOT_WIDTH = 130;
-const SLOT_HEIGHT = 14;
+const MAX_ANIMATED_WORDS = 18;
+const CENTER_SLOT_WIDTH = 106;
+const TWO_PI = Math.PI * 2;
+
+function WordVortexParticle({
+  word,
+  index,
+  total,
+  progress,
+}: {
+  word: string;
+  index: number;
+  total: number;
+  progress: Animated.SharedValue<number>;
+}) {
+  const animatedStyle = useAnimatedStyle(() => {
+    const p = progress.value;
+    const enter = Math.min(p / 0.65, 1);
+    const pull = p <= 0.65 ? 0 : Math.min((p - 0.65) / 0.35, 1);
+
+    const baseRadius = 96 + ((index % 5) * 12);
+    const swirlTurns = 2.6 + index * 0.08;
+    const angle = enter * swirlTurns * TWO_PI + (index / Math.max(total, 1)) * TWO_PI;
+    const radius = interpolate(enter, [0, 1], [baseRadius, 34]);
+
+    const x = Math.cos(angle) * radius * (1 - pull);
+    const yOrbit = Math.sin(angle) * radius * 0.52;
+    const yLift = interpolate(enter, [0, 1], [132 + (index % 3) * 8, yOrbit - 8]);
+    const y = yLift * (1 - pull);
+
+    const scale = interpolate(p, [0, 0.75, 1], [1.02, 0.94, 0.5]);
+    const opacity = interpolate(p, [0, 0.78, 0.97, 1], [0, 1, 0.24, 0]);
+
+    return {
+      opacity,
+      transform: [{ translateX: x }, { translateY: y }, { scale }],
+    };
+  });
+
+  return <Animated.Text style={[styles.wordParticle, animatedStyle]}>{word}</Animated.Text>;
+}
 
 export function CaptureState({
   draft,
@@ -31,14 +71,14 @@ export function CaptureState({
   items,
   isReady,
   onDropSuccess,
-  demoResurfaceHeldItem,
+  resurfaceNow,
+  canResurfaceNow,
 }: Props) {
   const [inputFocused, setInputFocused] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [cardText, setCardText] = useState('');
-  const [slotCenterY, setSlotCenterY] = useState(0);
-  const [inputCenterY, setInputCenterY] = useState(0);
+  const [words, setWords] = useState<string[]>([]);
   const [tiltEnabled, setTiltEnabled] = useState(experiments.tiltToDrop.enabled);
+  const [isListening, setIsListening] = useState(false);
 
   const heldCount = useMemo(() => items.filter((item) => item.status === 'held').length, [items]);
 
@@ -46,9 +86,10 @@ export function CaptureState({
   const ringScale = useSharedValue(1);
   const ringShiftY = useSharedValue(0);
 
-  const cardY = useSharedValue(0);
-  const cardScale = useSharedValue(1);
-  const cardOpacity = useSharedValue(0);
+  const dropProgress = useSharedValue(0);
+  const tornadoOpacity = useSharedValue(0);
+  const slotOpen = useSharedValue(0);
+  const micRipple = useSharedValue(0);
 
   useEffect(() => {
     breath.value = withRepeat(
@@ -61,6 +102,22 @@ export function CaptureState({
     );
   }, [breath]);
 
+  useEffect(() => {
+    if (!isListening) {
+      micRipple.value = withTiming(0, { duration: 260, easing: Easing.out(Easing.quad) });
+      return;
+    }
+
+    micRipple.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 920, easing: Easing.inOut(Easing.quad) }),
+        withTiming(0, { duration: 920, easing: Easing.inOut(Easing.quad) })
+      ),
+      -1,
+      false
+    );
+  }, [isListening, micRipple]);
+
   const ringAnimatedStyle = useAnimatedStyle(() => {
     const pulse = 1 + breath.value * 0.045;
     return {
@@ -68,9 +125,28 @@ export function CaptureState({
     };
   });
 
-  const cardAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: cardOpacity.value,
-    transform: [{ translateY: cardY.value }, { scale: cardScale.value }],
+  const tornadoStyle = useAnimatedStyle(() => ({
+    opacity: tornadoOpacity.value,
+  }));
+
+  const slotCapStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleY: interpolate(slotOpen.value, [0, 1], [1, 0.25]) }],
+    opacity: interpolate(slotOpen.value, [0, 1], [1, 0.8]),
+  }));
+
+  const slotGlowStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(slotOpen.value, [0, 1], [0.05, 0.32]),
+    transform: [{ scale: interpolate(slotOpen.value, [0, 1], [0.84, 1.02]) }],
+  }));
+
+  const micRippleOuterStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(micRipple.value, [0, 1], [0, 0.35]),
+    transform: [{ scale: interpolate(micRipple.value, [0, 1], [0.85, 1.2]) }],
+  }));
+
+  const micRippleInnerStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(micRipple.value, [0, 1], [0.18, 0.46]),
+    transform: [{ scale: interpolate(micRipple.value, [0, 1], [0.9, 1.1]) }],
   }));
 
   const onFocusChange = (focused: boolean) => {
@@ -79,22 +155,17 @@ export function CaptureState({
     ringShiftY.value = withTiming(focused ? 20 : 0, { duration: 440, easing: Easing.out(Easing.cubic) });
   };
 
-  const onSlotLayout = (event: LayoutChangeEvent) => {
-    const { y, height } = event.nativeEvent.layout;
-    setSlotCenterY(y + height / 2);
-  };
-
-  const onInputLayout = (event: LayoutChangeEvent) => {
-    const { y, height } = event.nativeEvent.layout;
-    setInputCenterY(y + height / 2);
-  };
-
-  const completeSubmit = useCallback((itemId: string) => {
-    setIsSubmitting(false);
-    setCardText('');
-    onDropSuccess();
-    commitCaptureTransition(itemId);
-  }, [commitCaptureTransition, onDropSuccess]);
+  const completeSubmit = useCallback(
+    (itemId: string) => {
+      setIsSubmitting(false);
+      setWords([]);
+      tornadoOpacity.value = 0;
+      slotOpen.value = 0;
+      onDropSuccess();
+      commitCaptureTransition(itemId);
+    },
+    [commitCaptureTransition, onDropSuccess, slotOpen, tornadoOpacity]
+  );
 
   const submit = useCallback(async () => {
     if (isSubmitting) {
@@ -107,30 +178,46 @@ export function CaptureState({
       return;
     }
 
-    if (!slotCenterY || !inputCenterY) {
-      onDropSuccess();
-      commitCaptureTransition(item.id);
-      return;
-    }
-
     setIsSubmitting(true);
-    setCardText(item.text);
+    setIsListening(false);
 
-    cardY.value = inputCenterY - slotCenterY;
-    cardScale.value = 1;
-    cardOpacity.value = 1;
+    const splitWords = item.text
+      .split(/\s+/)
+      .map((word) => word.trim())
+      .filter(Boolean)
+      .slice(0, MAX_ANIMATED_WORDS);
 
-    cardY.value = withTiming(0, { duration: 860, easing: Easing.inOut(Easing.cubic) });
-    cardScale.value = withTiming(0.9, { duration: 860, easing: Easing.out(Easing.cubic) });
-    cardOpacity.value = withDelay(
-      740,
-      withTiming(0, { duration: 220, easing: Easing.in(Easing.quad) }, (finished) => {
+    setWords(splitWords.length > 0 ? splitWords : ['...']);
+
+    dropProgress.value = 0;
+    tornadoOpacity.value = 1;
+    slotOpen.value = 0;
+
+    dropProgress.value = withTiming(1, { duration: 1820, easing: Easing.inOut(Easing.cubic) });
+    slotOpen.value = withDelay(
+      860,
+      withSequence(
+        withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) }),
+        withDelay(260, withTiming(0, { duration: 260, easing: Easing.inOut(Easing.cubic) }))
+      )
+    );
+
+    tornadoOpacity.value = withDelay(
+      1650,
+      withTiming(0, { duration: 180, easing: Easing.in(Easing.quad) }, (finished) => {
         if (finished) {
           runOnJS(completeSubmit)(item.id);
         }
       })
     );
-  }, [cardOpacity, cardScale, cardY, completeSubmit, commitCaptureTransition, inputCenterY, isSubmitting, onDropSuccess, prepareCaptureItem, slotCenterY]);
+  }, [
+    completeSubmit,
+    dropProgress,
+    isSubmitting,
+    prepareCaptureItem,
+    slotOpen,
+    tornadoOpacity,
+  ]);
 
   const shouldArmTiltGesture =
     tiltEnabled && isReady && !isSubmitting && !inputFocused && draft.trim().length > 0;
@@ -144,33 +231,46 @@ export function CaptureState({
   return (
     <View style={styles.screen}>
       <View style={styles.topBar}>
+        <Pressable
+          disabled={!canResurfaceNow || !isReady}
+          onPress={resurfaceNow}
+          style={({ pressed }) => [
+            styles.resurfacePill,
+            (!canResurfaceNow || !isReady) && styles.resurfacePillDisabled,
+            pressed && canResurfaceNow && styles.resurfacePillPressed,
+          ]}>
+          <Text style={styles.resurfacePillText}>resurface now</Text>
+        </Pressable>
+
         <View style={styles.pill}>
           <Text style={styles.pillText}>{heldCount} held</Text>
         </View>
       </View>
 
       <View style={styles.centerZone}>
-        <View style={styles.slotArea} onLayout={onSlotLayout}>
-          <View style={styles.slot} />
-        </View>
-
         <Animated.View style={[styles.ringsWrap, ringAnimatedStyle]}>
           <View style={[styles.ring, styles.ringOuter]} />
           <View style={[styles.ring, styles.ringMid]} />
           <View style={[styles.ring, styles.ringInner]} />
-          <View style={styles.micCore}>
-            <MaterialIcons name="mic-none" size={34} color={appColors.textPrimary} />
-          </View>
-        </Animated.View>
 
-        <Animated.View pointerEvents="none" style={[styles.floatingCard, cardAnimatedStyle]}>
-          <Text numberOfLines={2} style={styles.floatingCardText}>
-            {cardText}
-          </Text>
+          <Animated.View pointerEvents="none" style={[styles.tornadoLayer, tornadoStyle]}>
+            {words.map((word, index) => (
+              <WordVortexParticle
+                key={`${word}-${index}`}
+                word={word}
+                index={index}
+                total={words.length}
+                progress={dropProgress}
+              />
+            ))}
+          </Animated.View>
+
+          <Animated.View style={[styles.slotGlow, slotGlowStyle]} />
+          <Animated.View style={[styles.slotCap, slotCapStyle]} />
         </Animated.View>
       </View>
 
-      <View style={styles.inputWrap} onLayout={onInputLayout}>
+      <View style={styles.inputWrap}>
         {__DEV__ && experiments.tiltToDrop.enabled ? (
           <View style={styles.experimentRow}>
             <View style={styles.devButtonRow}>
@@ -183,11 +283,6 @@ export function CaptureState({
                 style={({ pressed }) => [styles.devToggle, pressed && styles.devTogglePressed]}
                 onPress={() => setDraft('I keep rehearsing this conversation in my head.')}>
                 <Text style={styles.devToggleText}>Fill draft</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.devToggle, pressed && styles.devTogglePressed]}
-                onPress={demoResurfaceHeldItem}>
-                <Text style={styles.devToggleText}>Resurface now</Text>
               </Pressable>
             </View>
             {tiltEnabled ? <Text style={styles.hintText}>tilt phone forward to release</Text> : null}
@@ -207,6 +302,24 @@ export function CaptureState({
             returnKeyType="send"
             onSubmitEditing={submit}
           />
+
+          <Pressable
+            onPress={() => setIsListening((value) => !value)}
+            disabled={!isReady || isSubmitting}
+            style={({ pressed }) => [
+              styles.micButton,
+              isListening && styles.micButtonActive,
+              pressed && styles.micButtonPressed,
+            ]}>
+            <Animated.View pointerEvents="none" style={[styles.micRippleRing, styles.micRippleOuter, micRippleOuterStyle]} />
+            <Animated.View pointerEvents="none" style={[styles.micRippleRing, styles.micRippleInner, micRippleInnerStyle]} />
+            <MaterialIcons
+              name={isListening ? 'graphic-eq' : 'mic-none'}
+              size={18}
+              color={isListening ? '#2F5BD8' : appColors.textPrimary}
+            />
+          </Pressable>
+
           <Pressable
             style={({ pressed }) => [styles.sendButton, pressed && styles.sendButtonPressed]}
             onPress={submit}
@@ -214,6 +327,8 @@ export function CaptureState({
             <MaterialIcons name="north-east" size={16} color="#FFF" />
           </Pressable>
         </View>
+
+        {isListening ? <Text style={styles.listeningHint}>listening… (prototype)</Text> : null}
       </View>
     </View>
   );
@@ -225,8 +340,29 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topBar: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingTop: spacing.sm,
+  },
+  resurfacePill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: appColors.border,
+    backgroundColor: appColors.surface,
+  },
+  resurfacePillDisabled: {
+    opacity: 0.45,
+  },
+  resurfacePillPressed: {
+    opacity: 0.78,
+  },
+  resurfacePillText: {
+    ...typography.caption,
+    color: appColors.textMuted,
+    fontWeight: '500',
   },
   pill: {
     paddingHorizontal: spacing.md,
@@ -244,21 +380,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingBottom: spacing.xxxl,
-  },
-  slotArea: {
-    width: SLOT_WIDTH,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  slot: {
-    width: SLOT_WIDTH,
-    height: SLOT_HEIGHT,
-    borderRadius: radii.pill,
-    backgroundColor: '#DFE3EF',
-    borderWidth: 1,
-    borderColor: appColors.border,
   },
   ringsWrap: {
     width: RING_SIZE,
@@ -285,33 +406,36 @@ const styles = StyleSheet.create({
     width: RING_SIZE * 0.5,
     height: RING_SIZE * 0.5,
   },
-  micCore: {
-    width: 72,
-    height: 72,
+  slotGlow: {
+    position: 'absolute',
+    width: CENTER_SLOT_WIDTH + 20,
+    height: 16,
     borderRadius: radii.pill,
+    backgroundColor: '#A3B8F4',
+  },
+  slotCap: {
+    position: 'absolute',
+    width: CENTER_SLOT_WIDTH,
+    height: 12,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: appColors.border,
+    backgroundColor: '#E7EBF6',
+  },
+  tornadoLayer: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: appColors.border,
-    backgroundColor: '#FFF',
   },
-  floatingCard: {
+  wordParticle: {
     position: 'absolute',
-    width: 190,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: appColors.border,
-    shadowColor: '#252C3B',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-  },
-  floatingCardText: {
     ...typography.caption,
     color: appColors.textPrimary,
+    backgroundColor: 'rgba(255,255,255,0.86)',
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    overflow: 'hidden',
   },
   inputWrap: {
     paddingBottom: spacing.lg,
@@ -358,7 +482,7 @@ const styles = StyleSheet.create({
     paddingRight: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   inputBarFocused: {
     borderColor: '#BCC5DE',
@@ -368,6 +492,38 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: appColors.textPrimary,
     paddingVertical: spacing.md,
+  },
+  micButton: {
+    width: 34,
+    height: 34,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: appColors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+    overflow: 'hidden',
+  },
+  micButtonActive: {
+    borderColor: '#9AB0EA',
+    backgroundColor: '#F2F6FF',
+  },
+  micButtonPressed: {
+    opacity: 0.8,
+  },
+  micRippleRing: {
+    position: 'absolute',
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: '#A3B8F4',
+  },
+  micRippleOuter: {
+    width: 34,
+    height: 34,
+  },
+  micRippleInner: {
+    width: 26,
+    height: 26,
   },
   sendButton: {
     width: 30,
@@ -379,5 +535,10 @@ const styles = StyleSheet.create({
   },
   sendButtonPressed: {
     opacity: 0.85,
+  },
+  listeningHint: {
+    ...typography.caption,
+    color: appColors.textMuted,
+    textAlign: 'center',
   },
 });
