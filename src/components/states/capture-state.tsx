@@ -22,7 +22,8 @@ type Props = ReturnType<typeof useDropItController>;
 
 const RING_SIZE = 220;
 const MAX_ANIMATED_WORDS = 18;
-const CENTER_SLOT_WIDTH = 106;
+const CENTER_RECEIVER_WIDTH = 114;
+const CENTER_RECEIVER_HEIGHT = 70;
 const TWO_PI = Math.PI * 2;
 
 function WordVortexParticle({
@@ -38,21 +39,21 @@ function WordVortexParticle({
 }) {
   const animatedStyle = useAnimatedStyle(() => {
     const p = progress.value;
-    const enter = Math.min(p / 0.65, 1);
-    const pull = p <= 0.65 ? 0 : Math.min((p - 0.65) / 0.35, 1);
+    const settle = Math.min(p / 0.72, 1);
+    const pull = p <= 0.72 ? 0 : Math.min((p - 0.72) / 0.28, 1);
 
-    const baseRadius = 96 + ((index % 5) * 12);
-    const swirlTurns = 2.6 + index * 0.08;
-    const angle = enter * swirlTurns * TWO_PI + (index / Math.max(total, 1)) * TWO_PI;
-    const radius = interpolate(enter, [0, 1], [baseRadius, 34]);
+    const baseRadius = 92 + ((index % 4) * 11);
+    const swirlTurns = 1.4 + index * 0.035;
+    const angle = settle * swirlTurns * TWO_PI + (index / Math.max(total, 1)) * TWO_PI;
+    const radius = interpolate(settle, [0, 1], [baseRadius, 44]);
 
-    const x = Math.cos(angle) * radius * (1 - pull);
-    const yOrbit = Math.sin(angle) * radius * 0.52;
-    const yLift = interpolate(enter, [0, 1], [132 + (index % 3) * 8, yOrbit - 8]);
-    const y = yLift * (1 - pull);
+    const x = Math.cos(angle) * radius * (1 - pull * 0.92);
+    const yOrbit = Math.sin(angle) * radius * 0.42;
+    const yLift = interpolate(settle, [0, 1], [124 + (index % 3) * 8, yOrbit - 4]);
+    const y = yLift * (1 - pull) + interpolate(pull, [0, 1], [0, -1]);
 
-    const scale = interpolate(p, [0, 0.75, 1], [1.02, 0.94, 0.5]);
-    const opacity = interpolate(p, [0, 0.78, 0.97, 1], [0, 1, 0.24, 0]);
+    const scale = interpolate(p, [0, 0.72, 1], [1.01, 0.96, 0.72]);
+    const opacity = interpolate(p, [0, 0.1, 0.84, 0.96, 1], [0, 1, 1, 0.36, 0]);
 
     return {
       opacity,
@@ -130,13 +131,22 @@ export function CaptureState({
   }));
 
   const slotCapStyle = useAnimatedStyle(() => ({
-    transform: [{ scaleY: interpolate(slotOpen.value, [0, 1], [1, 0.25]) }],
-    opacity: interpolate(slotOpen.value, [0, 1], [1, 0.8]),
+    transform: [
+      { perspective: 600 },
+      { translateY: interpolate(slotOpen.value, [0, 1], [0, -8]) },
+      { rotateX: `${interpolate(slotOpen.value, [0, 1], [0, -56])}deg` },
+    ],
+    opacity: interpolate(slotOpen.value, [0, 1], [1, 0.92]),
   }));
 
   const slotGlowStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(slotOpen.value, [0, 1], [0.05, 0.32]),
-    transform: [{ scale: interpolate(slotOpen.value, [0, 1], [0.84, 1.02]) }],
+    opacity: interpolate(slotOpen.value, [0, 1], [0.08, 0.4]),
+    transform: [{ scale: interpolate(slotOpen.value, [0, 1], [0.86, 1.04]) }],
+  }));
+
+  const receiverInnerStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(slotOpen.value, [0, 1], [0.05, 0.4]),
+    transform: [{ scaleY: interpolate(slotOpen.value, [0, 1], [0.78, 1]) }],
   }));
 
   const micRippleOuterStyle = useAnimatedStyle(() => ({
@@ -193,18 +203,18 @@ export function CaptureState({
     tornadoOpacity.value = 1;
     slotOpen.value = 0;
 
-    dropProgress.value = withTiming(1, { duration: 1820, easing: Easing.inOut(Easing.cubic) });
+    dropProgress.value = withTiming(1, { duration: 3520, easing: Easing.inOut(Easing.quad) });
     slotOpen.value = withDelay(
-      860,
+      620,
       withSequence(
-        withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) }),
-        withDelay(260, withTiming(0, { duration: 260, easing: Easing.inOut(Easing.cubic) }))
+        withTiming(1, { duration: 480, easing: Easing.out(Easing.cubic) }),
+        withDelay(1700, withTiming(0, { duration: 440, easing: Easing.inOut(Easing.cubic) }))
       )
     );
 
     tornadoOpacity.value = withDelay(
-      1650,
-      withTiming(0, { duration: 180, easing: Easing.in(Easing.quad) }, (finished) => {
+      3520,
+      withTiming(0, { duration: 260, easing: Easing.in(Easing.quad) }, (finished) => {
         if (finished) {
           runOnJS(completeSubmit)(item.id);
         }
@@ -265,8 +275,12 @@ export function CaptureState({
             ))}
           </Animated.View>
 
-          <Animated.View style={[styles.slotGlow, slotGlowStyle]} />
-          <Animated.View style={[styles.slotCap, slotCapStyle]} />
+          <Animated.View style={[styles.receiverGlow, slotGlowStyle]} />
+          <Animated.View style={styles.receiverShell}>
+            <Animated.View style={[styles.receiverInner, receiverInnerStyle]} />
+            <View style={styles.receiverLip} />
+            <Animated.View style={[styles.receiverFlap, slotCapStyle]} />
+          </Animated.View>
         </Animated.View>
       </View>
 
@@ -406,21 +420,52 @@ const styles = StyleSheet.create({
     width: RING_SIZE * 0.5,
     height: RING_SIZE * 0.5,
   },
-  slotGlow: {
+  receiverGlow: {
     position: 'absolute',
-    width: CENTER_SLOT_WIDTH + 20,
-    height: 16,
+    width: CENTER_RECEIVER_WIDTH + 14,
+    height: CENTER_RECEIVER_HEIGHT - 16,
     borderRadius: radii.pill,
-    backgroundColor: '#A3B8F4',
+    backgroundColor: 'rgba(139, 165, 235, 0.35)',
   },
-  slotCap: {
+  receiverShell: {
     position: 'absolute',
-    width: CENTER_SLOT_WIDTH,
-    height: 12,
+    width: CENTER_RECEIVER_WIDTH,
+    height: CENTER_RECEIVER_HEIGHT,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#C8D2EA',
+    backgroundColor: '#F7F9FF',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    overflow: 'hidden',
+  },
+  receiverInner: {
+    position: 'absolute',
+    left: 8,
+    right: 8,
+    top: 24,
+    bottom: 8,
+    borderRadius: 10,
+    backgroundColor: '#DDE6FA',
+  },
+  receiverLip: {
+    marginTop: 22,
+    width: CENTER_RECEIVER_WIDTH - 24,
+    height: 7,
     borderRadius: radii.pill,
     borderWidth: 1,
-    borderColor: appColors.border,
-    backgroundColor: '#E7EBF6',
+    borderColor: '#C8D2EA',
+    backgroundColor: '#EDF2FF',
+  },
+  receiverFlap: {
+    position: 'absolute',
+    top: 8,
+    width: CENTER_RECEIVER_WIDTH - 16,
+    height: 24,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#C1CEE9',
+    backgroundColor: '#E9EEFB',
   },
   tornadoLayer: {
     ...StyleSheet.absoluteFillObject,
