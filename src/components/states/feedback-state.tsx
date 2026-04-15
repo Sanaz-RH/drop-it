@@ -104,10 +104,10 @@ export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfir
   }));
 
   const stampStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(stampProgress.value, [0, 0.2, 0.52, 1], [0, 0.88, 1, 0.95]),
+    opacity: interpolate(stampProgress.value, [0, 0.26, 0.6, 1], [0, 0.78, 0.9, 0.88]),
     transform: [
-      { translateY: interpolate(stampProgress.value, [0, 0.42, 0.68, 1], [-24, 10, -5, 0]) },
-      { scale: interpolate(stampProgress.value, [0, 0.46, 0.7, 1], [0.78, 1.03, 0.97, 1]) },
+      { translateY: interpolate(stampProgress.value, [0, 0.46, 0.74, 1], [-14, 6, -3, 0]) },
+      { scale: interpolate(stampProgress.value, [0, 0.5, 0.74, 1], [0.84, 1.02, 0.98, 1]) },
     ],
   }));
 
@@ -119,6 +119,14 @@ export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfir
           <Animated.View style={[styles.ring, styles.midRing, midRingStyle]} />
           <Animated.View style={[styles.ring, styles.innerRing, innerRingStyle]} />
           <Animated.View style={[styles.ring, styles.confirmRing, confirmRingStyle]} />
+
+          <StampMark
+            label={stampLabel}
+            size="small"
+            rotation={stampRotation}
+            style={styles.confirmStamp}
+            animatedStyle={stampStyle}
+          />
 
           <View style={styles.checkWrap}>
             <Animated.View style={[styles.checkLine, styles.checkStem, checkStemStyle]} />
@@ -139,14 +147,6 @@ export function FeedbackState({ activeItem, items, goToCapture, onFeedbackConfir
               “{activeItem?.text ?? 'Your thought'}”
             </Text>
           </Animated.View>
-
-          <StampMark
-            label={stampLabel}
-            size="large"
-            rotation={stampRotation}
-            style={styles.cardStamp}
-            animatedStyle={stampStyle}
-          />
         </View>
 
         <View style={styles.dotsWrap}>
@@ -211,6 +211,10 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
   },
+  confirmStamp: {
+    position: 'absolute',
+    zIndex: 1,
+  },
   checkWrap: {
     width: 58,
     height: 42,
@@ -260,11 +264,6 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  cardStamp: {
-    position: 'absolute',
-    top: -26,
-    right: -8,
   },
   cardText: {
     ...typography.body,
